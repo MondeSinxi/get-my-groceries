@@ -45,7 +45,7 @@ def clean_price_string_woolworths(price_text: str) -> Tuple[float, Union[float, 
         return (original_price, discounted_price)
 
 
-def navigate(soup):
+def navigate(soup) -> Tuple[bool, str]:
     # go to the next page
     nav_url_div = soup.find_all("div", class_="pagination__info")
     pagination_nav = [i.text for i in soup.find_all("span", class_="icon-text")]
@@ -57,7 +57,7 @@ def navigate(soup):
         return (False, WOOLWORTHS_URL)
 
 
-def scrape_page(browser, URL, backend_db):
+def scrape_page(browser, URL: str, backend_db: str) -> BeautifulSoup:
     browser.get(URL)
     page = browser.page_source
     dump_page_source(page)
