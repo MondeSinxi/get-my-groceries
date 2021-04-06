@@ -2,4 +2,5 @@ env
 .vscode
 geckodriver.log
 utils/__pycache__
+scrapers/__pycache__
 data
