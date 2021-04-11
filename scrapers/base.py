@@ -14,6 +14,10 @@ class SiteScraper:
 
     def __init__(self, backend_db="sqlite"):
         self.backend_db = backend_db
+        self.opts = Options()
+        self.opts.headless = True
+        assert self.opts.headless  # Operating in headless mode
+        self.browser = Firefox(options=self.opts)
 
     @classmethod
     def register_scraper(cls, subcls):
@@ -43,19 +47,19 @@ class SiteScraper:
         """
         Driver crawls through site and scrapes each page
         """
-        opts = Options()
-        opts.headless = True
-        assert opts.headless  # Operating in headless mode
-        browser = Firefox(options=opts)
-
         state = {'next': False, 'soup': ''}
         # intial run
-        state['soup'] = self.scrape_page(browser, url)
+        state['soup'] = self.scrape_page(self.browser, url)
         state['next'], url = self.navigate(state['soup'])
         while state['next']:
             state['next'], url = self.navigate(state['soup'])
             if state['next']:
-                state['soup'] = self.scrape_page(browser, url)
+                state['soup'] = self.scrape_page(self.browser, url)
             else:
                 logging.info("scraping complete!")
-        browser.close()
+        self.close_browser()
+
+    def close_browser(self):
+        logging.info(f"Closing connection...")
+        self.browser.close()
+        # sys.exit("Empty results page")

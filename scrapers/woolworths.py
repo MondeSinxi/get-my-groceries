@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 from pprint import pprint
 import re
+import sys
 from typing import Union, Tuple
 
 logging.basicConfig(level=logging.DEBUG)
@@ -53,7 +54,8 @@ class WoolworthsScraper(SiteScraper):
         if results:
             return results
         logging.info(f"results from page empty: {results}")
-        return results
+        self.close_browser()
+        sys.exit("Empty results page")
 
     def clean_price_string(self, price_text: str) -> Tuple[float, Union[float, None]]:
         discount_match = re.match(

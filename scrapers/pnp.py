@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import logging
 from pprint import pprint
 import re
+import sys
 from typing import Tuple
 from datetime import datetime
 
@@ -55,7 +56,8 @@ class PnpScraper(SiteScraper):
         if results:
             return results
         logging.info(f"results from page empty: {results}")
-        return results
+        self.close_browser()
+        sys.exit("Empty results page")
 
     def navigate(self, soup):
         # go to the next page
