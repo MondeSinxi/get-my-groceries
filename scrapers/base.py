@@ -12,8 +12,7 @@ class SiteScraper:
     """
     _subclasses = {}
 
-    def __init__(self, store="pnp", backend_db="sqlite"):
-        self.store = store
+    def __init__(self, backend_db="sqlite"):
         self.backend_db = backend_db
 
     @classmethod
@@ -30,8 +29,7 @@ class SiteScraper:
         """
         Returns registered scraper object
         """
-        subcls = cls._subclasses[scraper](*args, **kwargs)
-        return subcls
+        return cls._subclasses[scraper](*args, **kwargs)
 
     def load_to_db(self, data):
         """

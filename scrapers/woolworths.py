@@ -2,6 +2,7 @@ from .base import SiteScraper
 from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
+from pprint import pprint
 import re
 from typing import Union, Tuple
 
@@ -11,17 +12,36 @@ WOOLWORTHS_URL = "https://www.woolworths.co.za"
 
 INITIAL_ROOT = "/cat/Food/Fruit-Vegetables-Salads/_/N-lllnam"
 
-Item = tuple[str, str]
-
 run_date = datetime.now().strftime("%Y-%m-%d")
 
 
 class WoolworthsScraper(SiteScraper):
+    """A Woolworths scraper.
+    """
+    def __init__(self, backend_db="sqlite"):
+        self._grocery_items = []
+        super().__init__(backend_db=backend_db)
 
-    def __init__(self, store='woolworths', backend_db="sqlite"):
-        super().__init__(store=store, backend_db=backend_db)
+    def __repr__(self):
+        return f"WoolworthsScraper('{self.backend_db}')"
 
-    def extract_data(self, soup: BeautifulSoup) -> Item:
+    def __str__(self):
+        return f"Woolworths scraper writing to {self.backend_db}"
+
+    def __len__(self):
+        return len(self._grocery_items)
+
+    def __getitem__(self, position):
+        return self._grocery_items[position]
+
+    def __call__(self):
+        pprint(self._grocery_items)
+
+    @property
+    def grocery_items(self):
+        return self._grocery_items
+
+    def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
         product_items = soup.find_all("div", class_="product-list__item")
         results = [
             (
@@ -30,8 +50,9 @@ class WoolworthsScraper(SiteScraper):
             )
             for p in product_items
         ]
-        assert results, r"results from page empty: {results}"
-
+        if results:
+            return results
+        logging.info(f"results from page empty: {results}")
         return results
 
     def clean_price_string(self, price_text: str) -> Tuple[float, Union[float, None]]:
@@ -42,10 +63,9 @@ class WoolworthsScraper(SiteScraper):
             discounted_price = discount_match.group(2)
             original_price = discount_match.group(4)
             return (original_price, discounted_price,)
-        else:
-            discounted_price = None
-            original_price = price_text.split()[1]
-            return (original_price, discounted_price)
+        discounted_price = None
+        original_price = price_text.split()[1]
+        return (original_price, discounted_price)
 
     def navigate(self, soup) -> Tuple[bool, str]:
         # go to the next page
@@ -53,12 +73,12 @@ class WoolworthsScraper(SiteScraper):
         pagination_nav = [i.text for i in soup.find_all(
             "span", class_="icon-text"
         )]
-        if "Next" in pagination_nav:
-            # extract href
-            updated_route = nav_url_div[-1]("a")[-1]["href"]
-            return (True, WOOLWORTHS_URL + updated_route)
-        else:
+        if "Next" not in pagination_nav:
             return (False, WOOLWORTHS_URL)
+
+        # extract href
+        updated_route = nav_url_div[-1]("a")[-1]["href"]
+        return (True, WOOLWORTHS_URL + updated_route)
 
     def scrape_page(self, browser, URL: str) -> BeautifulSoup:
         browser.get(URL)
@@ -81,6 +101,7 @@ class WoolworthsScraper(SiteScraper):
             }
             for item in clean_results
         ]
+        self._grocery_items += docs
         self.load_to_db(docs)
         return soup
 
