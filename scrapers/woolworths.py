@@ -17,8 +17,8 @@ run_date = datetime.now().strftime("%Y-%m-%d")
 
 
 class WoolworthsScraper(SiteScraper):
-    """A Woolworths scraper.
-    """
+    """A Woolworths scraper."""
+
     def __init__(self, backend_db="sqlite"):
         self._grocery_items = []
         super().__init__(backend_db=backend_db)
@@ -58,13 +58,14 @@ class WoolworthsScraper(SiteScraper):
         sys.exit("Empty results page")
 
     def clean_price_string(self, price_text: str) -> Tuple[float, Union[float, None]]:
-        discount_match = re.match(
-            r"(R) ([0-9]+.[0-9]+)(R)([0-9]+.[0-9]+)",
-            price_text)
+        discount_match = re.match(r"(R) ([0-9]+.[0-9]+)(R)([0-9]+.[0-9]+)", price_text)
         if discount_match:
             discounted_price = discount_match.group(2)
             original_price = discount_match.group(4)
-            return (original_price, discounted_price,)
+            return (
+                original_price,
+                discounted_price,
+            )
         discounted_price = None
         original_price = price_text.split()[1]
         return (original_price, discounted_price)
@@ -72,9 +73,7 @@ class WoolworthsScraper(SiteScraper):
     def navigate(self, soup) -> Tuple[bool, str]:
         # go to the next page
         nav_url_div = soup.find_all("div", class_="pagination__info")
-        pagination_nav = [i.text for i in soup.find_all(
-            "span", class_="icon-text"
-        )]
+        pagination_nav = [i.text for i in soup.find_all("span", class_="icon-text")]
         if "Next" not in pagination_nav:
             return (False, WOOLWORTHS_URL)
 
@@ -88,9 +87,7 @@ class WoolworthsScraper(SiteScraper):
         # dump_page_source(page)
         soup = BeautifulSoup(page, "html.parser")
         results = self.extract_data(soup)
-        clean_results = [
-            (r[0], self.clean_price_string(r[1])) for r in results
-        ]
+        clean_results = [(r[0], self.clean_price_string(r[1])) for r in results]
 
         # create document
         docs = [

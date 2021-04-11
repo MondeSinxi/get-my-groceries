@@ -10,6 +10,7 @@ class SiteScraper:
     """
     Object scrapes data from site and loads to selected database
     """
+
     _subclasses = {}
 
     def __init__(self, backend_db="sqlite"):
@@ -25,7 +26,7 @@ class SiteScraper:
         Register class as scraper
         """
         if issubclass(subcls, cls):
-            name = subcls.__name__[:-len('Scraper')].lower()
+            name = subcls.__name__[: -len("Scraper")].lower()
             cls._subclasses[name] = subcls
 
     @classmethod
@@ -47,14 +48,14 @@ class SiteScraper:
         """
         Driver crawls through site and scrapes each page
         """
-        state = {'next': False, 'soup': ''}
+        state = {"next": False, "soup": ""}
         # intial run
-        state['soup'] = self.scrape_page(self.browser, url)
-        state['next'], url = self.navigate(state['soup'])
-        while state['next']:
-            state['next'], url = self.navigate(state['soup'])
-            if state['next']:
-                state['soup'] = self.scrape_page(self.browser, url)
+        state["soup"] = self.scrape_page(self.browser, url)
+        state["next"], url = self.navigate(state["soup"])
+        while state["next"]:
+            state["next"], url = self.navigate(state["soup"])
+            if state["next"]:
+                state["soup"] = self.scrape_page(self.browser, url)
             else:
                 logging.info("scraping complete!")
         self.close_browser()

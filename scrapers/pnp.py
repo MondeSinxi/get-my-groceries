@@ -10,7 +10,9 @@ from datetime import datetime
 logging.basicConfig(level=logging.DEBUG)
 
 PNP_URL = "https://www.pnp.co.za/"
-URL_VEG_ROUTE = "pnpstorefront/pnp/en/All-Products/Fresh-Food/Vegetables/c/vegetables703655157"
+URL_VEG_ROUTE = (
+    "pnpstorefront/pnp/en/All-Products/Fresh-Food/Vegetables/c/vegetables703655157"
+)
 
 run_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -18,7 +20,7 @@ Item = tuple[str, str]
 
 
 class PnpScraper(SiteScraper):
-    def __init__(self, backend_db='sqlite'):
+    def __init__(self, backend_db="sqlite"):
         self._grocery_items = []
         super().__init__(backend_db=backend_db)
 
@@ -42,8 +44,7 @@ class PnpScraper(SiteScraper):
         return self._grocery_items
 
     def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
-        product_items = soup.find_all("div",
-                                      class_="productCarouselItemContainer")
+        product_items = soup.find_all("div", class_="productCarouselItemContainer")
 
         assert product_items, "No products found"
         results = [
@@ -64,7 +65,7 @@ class PnpScraper(SiteScraper):
         nav_url_div = soup.find_all("li", class_="pagination-next")[0]("a")
         if nav_url_div:
             # extract href
-            updated_route = nav_url_div[0]['href']
+            updated_route = nav_url_div[0]["href"]
             return (True, PNP_URL + updated_route)
         else:
             return (False, PNP_URL)
@@ -75,8 +76,7 @@ class PnpScraper(SiteScraper):
         page = browser.page_source
         soup = BeautifulSoup(page, "html.parser")
         results = self.extract_data(soup)
-        clean_results = [(r[0], float(self.clean_price_string(r[1])))
-                         for r in results]
+        clean_results = [(r[0], float(self.clean_price_string(r[1]))) for r in results]
 
         # # create document
         docs = [
@@ -95,7 +95,7 @@ class PnpScraper(SiteScraper):
 
     def clean_price_string(self, price_text: str) -> str:
         m = re.match(r"(R)([0-9]+)([0-9][0-9])", price_text.strip())
-        return m.group(2) + '.' + m.group(3)
+        return m.group(2) + "." + m.group(3)
 
 
 if __name__ == "__main__":

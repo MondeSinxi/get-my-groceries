@@ -12,6 +12,7 @@ def dump_page_source(page: str) -> None:
     pickle.dump(page, open("data/page.pkl", "wb"))
     return
 
+
 class DataLoader(object):
     def __init__(self, backend_db):
         self.backend_db = backend_db
@@ -23,6 +24,7 @@ class DataLoader(object):
             return LoadMongo()
         elif self.backend_db == "elasticsearch":
             return LoadElasticsearch()
+
 
 class LoadSqlite(object):
     def __init__(self, connection_string="sqlite:///data/products.db"):
@@ -36,6 +38,7 @@ class LoadSqlite(object):
         print(df)
         df.to_sql("stg_products", con=self.engine, if_exists="append", index=False)
         return df
+
 
 class LoadMongo(object):
     def __init__(self, details):
@@ -55,5 +58,4 @@ class LoadElasticsearch(object):
         for doc in data:
             print(doc)
             res = es.index(index=self.index, body=doc, doc_type="items")
-            print(res['result'])
-
+            print(res["result"])
