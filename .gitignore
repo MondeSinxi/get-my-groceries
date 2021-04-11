@@ -3,4 +3,6 @@ env
 geckodriver.log
 utils/__pycache__
 scrapers/__pycache__
+__pycache__
+cli.egg-info
 data
