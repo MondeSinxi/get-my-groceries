@@ -30,7 +30,3 @@ def scrape(store, backend_db):
         scraper_obj.scrape_site(URLS[store])
     except KeyError:
         logging.error(f"No scraper for store: {store}")
-
-
-if __name__ == "__main__":
-    scrape()

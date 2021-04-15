@@ -20,6 +20,7 @@ Item = tuple[str, str]
 
 
 class PnpScraper(SiteScraper):
+    """Pick n Pay scraper"""
     def __init__(self, backend_db="sqlite"):
         self._grocery_items = []
         super().__init__(backend_db=backend_db)
