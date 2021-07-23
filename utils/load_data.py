@@ -45,8 +45,7 @@ class LoadMongo(object):
         self.details = details
 
     def load_data(self, data: List[dict]) -> pd.DataFrame:
-        df = pd.DataFrame(data)
-        return df
+        return pd.DataFrame(data)
 
 
 class LoadElasticsearch(object):
