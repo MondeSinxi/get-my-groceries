@@ -6,3 +6,5 @@ scrapers/__pycache__
 __pycache__
 cli.egg-info
 data
+gmg.egg-info
+dist
