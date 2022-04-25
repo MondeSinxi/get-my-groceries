@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  #   gmg:
+  #     image: "gmg:0.0.1"
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+    networks: 
+      - stack
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.12.1
+    ports:
+      - 5601:5601
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+    depends_on: 
+      - es
+    networks: 
+      - stack
+
+networks: 
+  stack: {}

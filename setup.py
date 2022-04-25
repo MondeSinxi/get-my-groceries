@@ -1,15 +1,17 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 setup(
-    name='gmg',
-    version='0.1',
-    packages=find_packages(),
-    py_modules=['cli'],
-    install_requires=[
-        'Click'
+    name="GetMyGroceries",
+    version="0.0.1",
+    packages=[
+        "gmg",
+        "gmg.utils",
+        "gmg.scrapers",
     ],
-    entry_points='''
+    include_package_data=True,
+    install_requires=["Click"],
+    entry_points="""
         [console_scripts]
-        get_my_groceries=cli:scrape
-    '''
+        gmg=gmg.cli:scrape
+    """,
 )
