@@ -1,6 +1,6 @@
+"""Pick n Pay scraper."""
 import logging
 import re
-import sys
 from typing import List, Tuple
 from datetime import datetime
 from pprint import pprint
@@ -53,11 +53,9 @@ class PnpScraper(SiteScraper):
             )
             for p in product_items
         ]
-        if results:
-            return results
-        logging.info("results from page empty: %s", results)
-        self.close_browser()
-        sys.exit("Empty results page")
+        if not results:
+            self.quit(results)
+        return results
 
     def navigate(self, soup):
         """Update navigation route"""
@@ -67,23 +65,6 @@ class PnpScraper(SiteScraper):
             updated_route = nav_url_div[0]["href"]
             return (True, PNP_URL + updated_route)
         return (False, PNP_URL)
-
-    def scrape_site(self, url: str) -> List[Item]:
-        """
-        Driver crawls through site and scrapes each page
-        """
-        docs = []
-        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
-        state["next"], url = self.navigate(state["soup"])
-        while state["next"]:
-            state["next"], url = self.navigate(state["soup"])
-            if state["next"]:
-                state["soup"], doc = self.scrape_page(self.browser, url)
-                docs = [*docs, *doc]
-            else:
-                logging.info("scraping complete!")
-        self.close_browser()
-        return docs
 
     def scrape_page(self, browser, url: str) -> BeautifulSoup:
         """Scrapes HTML to populate with PnP Items"""
@@ -96,7 +77,12 @@ class PnpScraper(SiteScraper):
 
         # # create document
         docs = [
-            Item(item_name=item[0], original_price=item[1], date=run_date, store_name="pnp")
+            Item(
+                item_name=item[0],
+                original_price=item[1],
+                date=run_date,
+                store_name="pnp",
+            )
             for item in clean_results
         ]
         self.update_grocery_items(docs)

@@ -1,3 +1,5 @@
+"""Defines the scrapers for each website."""
+
 from .base import SiteScraper
 from .woolworths import WoolworthsScraper
 from .pnp import PnpScraper

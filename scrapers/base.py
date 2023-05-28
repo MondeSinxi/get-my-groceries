@@ -1,6 +1,9 @@
+"""Base class for all scrapers"""
+
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 import logging
+import sys
 
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
@@ -50,6 +53,7 @@ class SiteScraper(ABC):
     def navigate(self, soup: BeautifulSoup) -> Tuple[bool, str]:
         """Update navigation route returning True if there is a next page and url of that route"""
 
+    @abstractmethod
     def scrape_page(self, browser, url: str) -> BeautifulSoup:
         """Scrapes HTML to populate with PnP Items"""
 
@@ -58,9 +62,22 @@ class SiteScraper(ABC):
     def grocery_items(self) -> List[Item]:
         """Class property of grocery items."""
 
-    @abstractmethod
     def scrape_site(self, url: str) -> List[Item]:
-        """Driver crawls through site and scrapes each page."""
+        """
+        Driver crawls through site and scrapes each page
+        """
+        docs = []
+        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
+        state["next"], url = self.navigate(state["soup"])
+        while state["next"]:
+            state["next"], url = self.navigate(state["soup"])
+            if state["next"]:
+                state["soup"], doc = self.scrape_page(self.browser, url)
+                docs = [*docs, *doc]
+            else:
+                logging.info("scraping complete!")
+        self.close_browser()
+        return docs
 
     def update_grocery_items(self, docs: List[Item]) -> None:
         """Updates the grocery items property"""
@@ -71,3 +88,9 @@ class SiteScraper(ABC):
         logging.info("Closing connection...")
         self.browser.close()
         # sys.exit("Empty results page")
+
+    def quit(self, results):
+        """Exits scraping when no results are found"""
+        logging.info("results from page empty: %s", results)
+        self.close_browser()
+        sys.exit("Empty results page")

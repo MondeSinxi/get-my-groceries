@@ -1,9 +1,9 @@
+"""Woolworths scraper."""
 from datetime import datetime
 import logging
 from pprint import pprint
 import re
-import sys
-from typing import List, Union, Tuple
+from typing import Union, Tuple
 
 from bs4 import BeautifulSoup
 from configs import Item
@@ -49,11 +49,9 @@ class WoolworthsScraper(SiteScraper):
             )
             for p in product_items
         ]
-        if results:
-            return results
-        logging.info("results from page empty: %s", results)
-        self.close_browser()
-        sys.exit("Empty results page")
+        if not results:
+            self.quit(results)
+        return results
 
     def clean_price_string(self, price_text: str) -> Tuple[float, Union[float, None]]:
         """Parses price text to return original and base price"""
@@ -79,23 +77,6 @@ class WoolworthsScraper(SiteScraper):
         # extract href
         updated_route = nav_url_div[-1]("a")[-1]["href"]
         return (True, WOOLWORTHS_URL + updated_route)
-
-    def scrape_site(self, url: str) -> List[Item]:
-        """
-        Driver crawls through site and scrapes each page
-        """
-        docs = []
-        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
-        state["next"], url = self.navigate(state["soup"])
-        while state["next"]:
-            state["next"], url = self.navigate(state["soup"])
-            if state["next"]:
-                state["soup"], doc = self.scrape_page(self.browser, url)
-                docs = [*docs, *doc]
-            else:
-                logging.info("scraping complete!")
-        self.close_browser()
-        return docs
 
     def scrape_page(self, browser, url: str) -> BeautifulSoup:
         """Scrapes HTML to populate with PnP Items"""
