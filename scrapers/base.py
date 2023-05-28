@@ -16,7 +16,7 @@ class SiteScraper(ABC):
     Object scrapes data from site and loads to selected database
     """
 
-    _subclasses = {}
+    subclasses = {}
 
     def __init__(self, site_name: str):
         self.site_name = site_name
@@ -33,7 +33,7 @@ class SiteScraper(ABC):
         """
         if issubclass(subcls, cls):
             name = subcls.__name__[: -len("Scraper")].lower()
-            cls._subclasses[name] = subcls
+            cls.subclasses[name] = subcls
 
     @classmethod
     def select_scraper(cls, scraper, *args, **kwargs):

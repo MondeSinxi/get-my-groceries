@@ -3,7 +3,7 @@ import logging
 from pprint import pprint
 import re
 import sys
-from typing import Union, Tuple
+from typing import List, Union, Tuple
 
 from bs4 import BeautifulSoup
 from configs import Item
@@ -24,12 +24,6 @@ class WoolworthsScraper(SiteScraper):
 
     def __init__(self):
         super().__init__("woolworths")
-
-    def __repr__(self):
-        return f"WoolworthsScraper('{self.backend_db}')"
-
-    def __str__(self):
-        return f"Woolworths scraper writing to {self.backend_db}"
 
     def __len__(self):
         return len(self._grocery_items)

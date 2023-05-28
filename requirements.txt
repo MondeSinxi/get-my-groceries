@@ -3,4 +3,5 @@ click
 elasticsearch
 loguru
 pandas
+selinium
 SQLAlchemy

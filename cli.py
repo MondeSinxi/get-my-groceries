@@ -1,9 +1,9 @@
-import click
 import logging
+import click
 import scrapers
-from utils import DataLoader
+from utils import data_processor
 
-subclasses = scrapers.SiteScraper._subclasses
+subclasses = scrapers.SiteScraper.subclasses
 
 URLS = {
     "pnp": "https://www.pnp.co.za/"
@@ -23,14 +23,15 @@ pass_state = click.make_pass_decorator(dict, ensure=True)
 )
 @pass_state
 def scrape(state, store):
+    """"Scrapes the chosen site."""
     try:
         scraper_cls = subclasses[store]
         scraper_obj = scraper_cls()
         state['docs'] = scraper_obj.scrape_site(URLS[store])
     except KeyError:
-        logging.error(f"No scraper for store: {store}")
+        logging.error("No scraper for store: %s", store)
 
-@scrape.command(name='load')
+@scrape.command(name='save')
 @click.option(
     "--backend_db",
     default="sqlite",
@@ -38,5 +39,7 @@ def scrape(state, store):
 )
 @pass_state
 def load_data(state, backend):
-    loader = DataLoader(backend)
+    """Saves scraped data to the chosen database"""
+    if backend == "sqlite":
+        loader = data_processor.LoadToSqlite()
     loader.load_data(state['docs'])

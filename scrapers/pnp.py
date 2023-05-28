@@ -27,12 +27,6 @@ class PnpScraper(SiteScraper):
     def __init__(self):
         super().__init__("pick n pay")
 
-    def __repr__(self):
-        return f"PnPScraper('{self.backend_db}')"
-
-    def __str__(self):
-        return f"PnP Sraper writing to {self.backend_db}"
-
     def __len__(self):
         return len(self._grocery_items)
 
