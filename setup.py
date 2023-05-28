@@ -1,3 +1,4 @@
+"""Install as cli."""
 from setuptools import setup
 
 setup(

@@ -1,3 +1,4 @@
+"""Command line utility for running scrapers."""
 import logging
 import click
 import scrapers
@@ -14,6 +15,7 @@ URLS = {
 
 pass_state = click.make_pass_decorator(dict, ensure=True)
 
+
 @click.group(chain=True)
 @click.command()
 @click.option(
@@ -23,15 +25,16 @@ pass_state = click.make_pass_decorator(dict, ensure=True)
 )
 @pass_state
 def scrape(state, store):
-    """"Scrapes the chosen site."""
+    """ "Scrapes the chosen site."""
     try:
         scraper_cls = subclasses[store]
         scraper_obj = scraper_cls()
-        state['docs'] = scraper_obj.scrape_site(URLS[store])
+        state["docs"] = scraper_obj.scrape_site(URLS[store])
     except KeyError:
         logging.error("No scraper for store: %s", store)
 
-@scrape.command(name='save')
+
+@scrape.command(name="save")
 @click.option(
     "--backend_db",
     default="sqlite",
@@ -42,4 +45,4 @@ def load_data(state, backend):
     """Saves scraped data to the chosen database"""
     if backend == "sqlite":
         loader = data_processor.LoadToSqlite()
-    loader.load_data(state['docs'])
+    loader.load_data(state["docs"])
