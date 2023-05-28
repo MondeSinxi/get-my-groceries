@@ -1,20 +1,26 @@
+from abc import ABC, abstractmethod
+from typing import List, Tuple
 import logging
+
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
-from utils import DataLoader
+from bs4 import BeautifulSoup
+
+from configs import Item
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-class SiteScraper:
+class SiteScraper(ABC):
     """
     Object scrapes data from site and loads to selected database
     """
 
     _subclasses = {}
 
-    def __init__(self, backend_db="sqlite"):
-        self.backend_db = backend_db
+    def __init__(self, site_name: str):
+        self.site_name = site_name
+        self._grocery_items = []
         self.opts = Options()
         self.opts.headless = True
         assert self.opts.headless  # Operating in headless mode
@@ -36,32 +42,32 @@ class SiteScraper:
         """
         return cls._subclasses[scraper](*args, **kwargs)
 
-    def load_to_db(self, data):
-        """
-        Loads data to database
-        """
-        data_loader = DataLoader(self.backend_db)
-        loader = data_loader.loader()
-        loader.load_data(data)
+    @abstractmethod
+    def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
+        """Returns name and price from bs component."""
 
-    def scrape_site(self, url: str) -> None:
-        """
-        Driver crawls through site and scrapes each page
-        """
-        docs = []
-        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
-        state["next"], url = self.navigate(state["soup"])
-        while state["next"]:
-            state["next"], url = self.navigate(state["soup"])
-            if state["next"]:
-                state["soup"], doc = self.scrape_page(self.browser, url)
-                docs = [*docs, *doc]
-            else:
-                logging.info("scraping complete!")
-        self.close_browser()
-        return docs
+    @abstractmethod
+    def navigate(self, soup: BeautifulSoup) -> Tuple[bool, str]:
+        """Update navigation route returning True if there is a next page and url of that route"""
+
+    def scrape_page(self, browser, url: str) -> BeautifulSoup:
+        """Scrapes HTML to populate with PnP Items"""
+
+    @abstractmethod
+    @property
+    def grocery_items(self) -> List[Item]:
+        """Class property of grocery items."""
+
+    @abstractmethod
+    def scrape_site(self, url: str) -> List[Item]:
+        """Driver crawls through site and scrapes each page."""
+
+    def update_grocery_items(self, docs: List[Item]) -> None:
+        """Updates the grocery items property"""
+        self._grocery_items += docs
 
     def close_browser(self):
-        logging.info(f"Closing connection...")
+        """Closes the connection to the browser"""
+        logging.info("Closing connection...")
         self.browser.close()
         # sys.exit("Empty results page")

@@ -1,11 +1,15 @@
-from .base import SiteScraper
-from bs4 import BeautifulSoup
 import logging
-from pprint import pprint
 import re
 import sys
-from typing import Tuple
+from typing import List, Tuple
 from datetime import datetime
+from pprint import pprint
+
+from bs4 import BeautifulSoup
+
+from configs import Item
+from .base import SiteScraper
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -16,14 +20,12 @@ URL_VEG_ROUTE = (
 
 run_date = datetime.now().strftime("%Y-%m-%d")
 
-Item = tuple[str, str]
-
 
 class PnpScraper(SiteScraper):
     """Pick n Pay scraper"""
-    def __init__(self, backend_db="sqlite"):
-        self._grocery_items = []
-        super().__init__(backend_db=backend_db)
+
+    def __init__(self):
+        super().__init__("pick n pay")
 
     def __repr__(self):
         return f"PnPScraper('{self.backend_db}')"
@@ -41,10 +43,12 @@ class PnpScraper(SiteScraper):
         pprint(self._grocery_items)
 
     @property
-    def grocery_items(self):
+    def grocery_items(self) -> List[Item]:
+        """Class property of grocery items."""
         return self._grocery_items
 
     def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
+        """Returns name and price from bs component."""
         product_items = soup.find_all("div", class_="productCarouselItemContainer")
 
         assert product_items, "No products found"
@@ -57,22 +61,39 @@ class PnpScraper(SiteScraper):
         ]
         if results:
             return results
-        logging.info(f"results from page empty: {results}")
+        logging.info("results from page empty: %s", results)
         self.close_browser()
         sys.exit("Empty results page")
 
     def navigate(self, soup):
-        # go to the next page
+        """Update navigation route"""
         nav_url_div = soup.find_all("li", class_="pagination-next")[0]("a")
         if nav_url_div:
             # extract href
             updated_route = nav_url_div[0]["href"]
             return (True, PNP_URL + updated_route)
-        else:
-            return (False, PNP_URL)
+        return (False, PNP_URL)
 
-    def scrape_page(self, browser, URL):
-        browser.get(URL)
+    def scrape_site(self, url: str) -> List[Item]:
+        """
+        Driver crawls through site and scrapes each page
+        """
+        docs = []
+        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
+        state["next"], url = self.navigate(state["soup"])
+        while state["next"]:
+            state["next"], url = self.navigate(state["soup"])
+            if state["next"]:
+                state["soup"], doc = self.scrape_page(self.browser, url)
+                docs = [*docs, *doc]
+            else:
+                logging.info("scraping complete!")
+        self.close_browser()
+        return docs
+
+    def scrape_page(self, browser, url: str) -> BeautifulSoup:
+        """Scrapes HTML to populate with PnP Items"""
+        browser.get(url)
 
         page = browser.page_source
         soup = BeautifulSoup(page, "html.parser")
@@ -81,23 +102,18 @@ class PnpScraper(SiteScraper):
 
         # # create document
         docs = [
-            {
-                "name": item[0],
-                "original_price": item[1],
-                "discounted_price": "not yet implemented",
-                "store": "pick n pay",
-                "date": run_date,
-            }
+            Item(item_name=item[0], original_price=item[1], date=run_date, store_name="pnp")
             for item in clean_results
         ]
-        self._grocery_items += docs
-        return soup, docs
+        self.update_grocery_items(docs)
+        return soup
 
     def clean_price_string(self, price_text: str) -> str:
-        m = re.match(r"(R)([0-9]+)([0-9][0-9])", price_text.strip())
-        return m.group(2) + "." + m.group(3)
+        """Take the price string ad returns a cleaner reresentation"""
+        match = re.match(r"(R)([0-9]+)([0-9][0-9])", price_text.strip())
+        return match.group(2) + "." + match.group(3)
 
 
 if __name__ == "__main__":
-    scraper = PnpScraper("sqlite")
+    scraper = PnpScraper()
     scraper.scrape_site(PNP_URL + URL_VEG_ROUTE)

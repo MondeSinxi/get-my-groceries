@@ -1,11 +1,14 @@
-from .base import SiteScraper
-from bs4 import BeautifulSoup
 from datetime import datetime
 import logging
 from pprint import pprint
 import re
 import sys
 from typing import Union, Tuple
+
+from bs4 import BeautifulSoup
+from configs import Item
+from .base import SiteScraper
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,9 +22,8 @@ run_date = datetime.now().strftime("%Y-%m-%d")
 class WoolworthsScraper(SiteScraper):
     """A Woolworths scraper."""
 
-    def __init__(self, backend_db="sqlite"):
-        self._grocery_items = []
-        super().__init__(backend_db=backend_db)
+    def __init__(self):
+        super().__init__("woolworths")
 
     def __repr__(self):
         return f"WoolworthsScraper('{self.backend_db}')"
@@ -40,9 +42,11 @@ class WoolworthsScraper(SiteScraper):
 
     @property
     def grocery_items(self):
+        """List of grocery Item types"""
         return self._grocery_items
 
     def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
+        """Gets BS components ad returns the product name and price"""
         product_items = soup.find_all("div", class_="product-list__item")
         results = [
             (
@@ -53,11 +57,12 @@ class WoolworthsScraper(SiteScraper):
         ]
         if results:
             return results
-        logging.info(f"results from page empty: {results}")
+        logging.info("results from page empty: %s", results)
         self.close_browser()
         sys.exit("Empty results page")
 
     def clean_price_string(self, price_text: str) -> Tuple[float, Union[float, None]]:
+        """Parses price text to return original and base price"""
         discount_match = re.match(r"(R) ([0-9]+.[0-9]+)(R)([0-9]+.[0-9]+)", price_text)
         if discount_match:
             discounted_price = discount_match.group(2)
@@ -71,7 +76,7 @@ class WoolworthsScraper(SiteScraper):
         return (original_price, discounted_price)
 
     def navigate(self, soup) -> Tuple[bool, str]:
-        # go to the next page
+        """Update navigation route"""
         nav_url_div = soup.find_all("div", class_="pagination__info")
         pagination_nav = [i.text for i in soup.find_all("span", class_="icon-text")]
         if "Next" not in pagination_nav:
@@ -81,8 +86,26 @@ class WoolworthsScraper(SiteScraper):
         updated_route = nav_url_div[-1]("a")[-1]["href"]
         return (True, WOOLWORTHS_URL + updated_route)
 
-    def scrape_page(self, browser, URL: str) -> BeautifulSoup:
-        browser.get(URL)
+    def scrape_site(self, url: str) -> List[Item]:
+        """
+        Driver crawls through site and scrapes each page
+        """
+        docs = []
+        state = {"next": False, "soup": self.scrape_page(self.browser, url)}
+        state["next"], url = self.navigate(state["soup"])
+        while state["next"]:
+            state["next"], url = self.navigate(state["soup"])
+            if state["next"]:
+                state["soup"], doc = self.scrape_page(self.browser, url)
+                docs = [*docs, *doc]
+            else:
+                logging.info("scraping complete!")
+        self.close_browser()
+        return docs
+
+    def scrape_page(self, browser, url: str) -> BeautifulSoup:
+        """Scrapes HTML to populate with PnP Items"""
+        browser.get(url)
         page = browser.page_source
         # dump_page_source(page)
         soup = BeautifulSoup(page, "html.parser")
@@ -91,20 +114,19 @@ class WoolworthsScraper(SiteScraper):
 
         # create document
         docs = [
-            {
-                "name": item[0],
-                "original_price": item[1][0],
-                "discounted_price": item[1][1],
-                "store": "woolworths",
-                "date": run_date,
-            }
+            Item(
+                item_name=item[0],
+                original_price=item[1][0],
+                discounted_price=item[1][1],
+                store_name="woolworths",
+                date=run_date,
+            )
             for item in clean_results
         ]
-        self._grocery_items += docs
-        self.load_to_db(docs)
+        self.update_grocery_items(docs)
         return soup
 
 
 if __name__ == "__main__":
-    scraper = WoolworthsScraper(backend_db="sqlite")
+    scraper = WoolworthsScraper()
     scraper.scrape_site(WOOLWORTHS_URL + INITIAL_ROOT)
