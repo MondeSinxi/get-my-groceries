@@ -40,7 +40,7 @@ class SiteScraper(ABC):
         """
         Returns registered scraper object
         """
-        return cls._subclasses[scraper](*args, **kwargs)
+        return cls.subclasses[scraper](*args, **kwargs)
 
     @abstractmethod
     def extract_data(self, soup: BeautifulSoup) -> Tuple[str, str]:
